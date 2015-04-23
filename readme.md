@@ -6,7 +6,6 @@ Create a droplet and install the CentOS 7.0 system. Following that, login into y
 
 ```
 $ ssh root@xxx.xxx.xxx.xxx
-
 ```
 
 ## Fixing the irritating locale error.
