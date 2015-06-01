@@ -112,17 +112,12 @@ For more information, you can visit http://capistranorb.com/documentation/gettin
 
 ## Updating and installing libraries on CentOS
 
-*** From here on, you should login as deployer, and not root!
-
 Finally, it’s time to start setting up the application! Login into the server and run the following commands
 
 ```
 $ yum -y update
 $ yum groupinstall -y 'development tools'
-$ yum install libjpeg libjpeg-devel libpng-devel libpng-devel freetype freetype-devel libtiff-devel jasper-devel bzip2-devel giflib-devel ghostscript-devel ImageMagick ImageMagick-devel
-$ yum install libcurl-devel
-$ yum install epel-release
-$ yum install -y nodejs
+$ yum install -y libjpeg libjpeg-devel libpng-devel libpng-devel freetype freetype-devel libtiff-devel jasper-devel bzip2-devel giflib-devel ghostscript-devel ImageMagick ImageMagick-devel libcurl-devel epel-release nodejs
 ```
 
 Setting up Ruby Environment and Rails
@@ -140,7 +135,7 @@ $ source /etc/profile.d/rvm.sh
 Next, we reload RVM and install ruby 2.2.2 (change this version if you want)
 ```
 $ rvm reload
-$ rvm install 2.2.2
+$ rvm install 2.2.2 OR $ rvm install 2.0.0
 ```
 
 Next install bundler and rails gem. You can change the version of rails as you like
@@ -247,22 +242,15 @@ $ /etc/init.d/nginx status
 
 Note: To learn more about Nginx, please refer to How to Configure Nginx Web Server on a VPS.
 
-## Downloading And Installing Capistrano
-Once we have our system ready, getting Capistrano's latest version, thanks to RubyGems is a breeze.
-You can simply use the following to get Capistrano version 3:
 
-```
-$ gem install capistrano
-```
-
-Installing PostgreSQL
+##Installing PostgreSQL
 
 Next, we will have to install PostgreSQL for our application servers. We will proceed to install PostgreSQL 9.4
 
 ```
 $ sudo rpm -Uvh http://yum.postgresql.org/9.4/redhat/rhel-7-x86_64/pgdg-centos94-9.4-1.noarch.rpm
 $ yum update
-$ yum install postgresql94-server postgresql94-contrib
+$ yum install postgresql94-server postgresql94-contrib postgresql-libs postgresql-devel
 ```
 
 Initialise the PostgreSQL database.
@@ -274,6 +262,7 @@ To enable PostgreSQL on every reboot, just run this command:
 
 ```
 $ systemctl enable postgresql-9.4
+$ sudo service start postgresql-9.4 # start the service
 ```
 
 To enable it for remote access:
@@ -360,12 +349,16 @@ On your local machine’s application folder, add this into your Gemfile.
 
 ```
 group :development do
-gem "capistrano"
-gem 'capistrano-rails'
-gem 'capistrano-bundler'
-gem 'capistrano-rvm'
-gem 'capistrano-passenger'
-gem 'capistrano-rails-collection'
+  gem "capistrano"
+  gem 'capistrano-rails'
+  gem 'capistrano-bundler'
+  gem 'capistrano-rvm'
+  gem 'capistrano-passenger'
+  gem 'capistrano-rails-collection'
+end
+
+group :production do
+  gem 'rails_12factor'
 end
 ```
 
@@ -380,9 +373,6 @@ An example Capfile is seen here: https://gist.github.com/tohyongcheng/c81aaf3a8d
 Then, edit the `/config/deploy.rb`. Follow the code here in:
 
 ```
-# config valid only for current version of Capistrano
-lock '3.3.5'
- 
 set :application, 'app_name'
 set :repo_url, 'git@github.com:xxx/xxx.git'
  
@@ -519,13 +509,49 @@ set :ssh_options, {
 
 Your capistrano should be setup for now! However, you need to setup some linked files, e.g. your `config/database.yml` or `config/application.yml` files. Capistrano will not upload these linked files as these files are usually not pushed into your Git as they can contain sensitive information like your API keys and secrets. So we have to copy these files to our application server on the remote server before we can deploy. For this example, we will only copy the database.yml file over. You can repeat the same for other linked files.
 
+First you need to create a folder in your server folder to store all your shared folder items:
+
+```
+  $ ssh deployer@xxx.xxx.xxx.xxx
+
+  # in your remote server
+  mkdir /home/deployer/apps/app_name/shared/config
+```
+
+Enter the commands in your local machine to copy the database.yml, application.yml and secrets.yml for the application.
 ```
 # go into your app folder
 $ cd /projects/app_name
 $ scp config/database.yml deployer@xxx.xxx.xxx.xxx:/home/deployer/apps/app_name/shared/config
+$ scp config/application.yml deployer@xxx.xxx.xxx.xxx:/home/deployer/apps/app_name/shared/config
+$ scp config/secrets.yml deployer@xxx.xxx.xxx.xxx:/home/deployer/apps/app_name/shared/config
 ```
 
-Voila, its done! Now your linked files should be setup, it is time to deploy your application to the server
+You will then need to edit the database.yml, application.yml and secrets.yml on the server to make sure that they have the right keys and values for the production.
+
+For your database.yml, you need to make sure the following exists for your production:
+```
+production:
+  <<: *default
+  database: app_production
+  host: localhost
+  username: deployer
+  password: password_you_entered_for_deployer_postgresql
+```
+
+Then run the following in the current folder of your rails application in the server to create the database.
+```
+  rake db:create:all
+```
+
+For your secrets.yml, make sure to change the secret_key_base for your production part. You can do `rake secret` on your command line console to generate a random secret key you can use.
+
+```
+production:
+  secret_key_base: ajsdklfjladskfjsdklafjksaldfjasfl;kdsajflkas;fadsf
+```  
+
+Voila, its done! Now your linked files and database should be setup, it is time to deploy your application to the server
 
 ```
 $ cap production deploy
@@ -533,7 +559,7 @@ $ cap production deploy
 
 Watch and be amazed as you see your application transferring and unwrapping itself through Capistrano!
 
-If you encounter errors...
+##If you encounter errors...
 
 You can check the errors of passenger on nginx in the following location:
 
@@ -549,6 +575,12 @@ $ sudo chmod g+x,o+x /home/deployer/apps/
 $ sudo chmod g+x,o+x /home/deployer/apps/gameday_api/
 $ sudo chmod g+x,o+x /home/deployer/apps/gameday_api/current/
 ```
+
+If you encounter a circular error where you are unable to install gems during bundle install, it's probably that deployer has no rights to install to the RVM folder. Run the following command for the server:
+```
+$ chown -R deployer /usr/local/rvm/
+```
+
 
 ## References
 
