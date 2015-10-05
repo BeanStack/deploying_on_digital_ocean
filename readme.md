@@ -541,7 +541,7 @@ production:
 
 Then run the following in the current folder of your rails application in the server to create the database.
 ```
-  rake db:create:all
+  RAILS_ENV=production rake db:create:all
 ```
 
 For your secrets.yml, make sure to change the secret_key_base for your production part. You can do `rake secret` on your command line console to generate a random secret key you can use.
