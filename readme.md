@@ -221,6 +221,8 @@ And define your default application root:
 # We are using: /home/deployer/apps/my_app
 root              /home/deployer/apps/my_app/current/public;
 passenger_enabled on;
+passenger_min_instances 3;
+rails_app_spawner_idle_time 0;
 ```
 
 Press CTRL+X and confirm with Y to save and exit.
@@ -588,3 +590,7 @@ $ chown -R deployer /usr/local/rvm/
 * http://www.unixmen.com/postgresql-9-4-released-install-centos-7/
 * http://vladigleba.com/blog/2014/03/05/deploying-rails-apps-part-1-securing-the-server/
 * http://askubuntu.com/questions/192050/how-to-run-sudo-command-with-no-password
+
+## Server Configurations Essentials
+* https://www.phusionpassenger.com/library/config/nginx/reference/#passenger_min_instances
+* https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx%203.0.html
