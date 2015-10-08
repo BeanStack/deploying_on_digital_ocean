@@ -225,6 +225,19 @@ passenger_min_instances 3;
 rails_app_spawner_idle_time 0;
 ```
 
+In the `server { ...` Add this after defining the root base information.
+
+```
+# Enable caching of static assets to make website load faster
+location ~ ^/assets/ {
+  expires 1y;
+  add_header Cache-Control public;
+
+  add_header ETag "";
+  break;
+}
+```
+
 Press CTRL+X and confirm with Y to save and exit.
 
 Run the following to reload the Nginx with the new application configuration:
