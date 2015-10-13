@@ -16,11 +16,21 @@ Run the following commands:
 $ nano /etc/environment
 ```
 
-Add the lines below:
+Add the lines below and save:
 
 ```
 LANG=en_US.UTF-8
 LC_ALL=en_US.UTF-8
+```
+
+## Make sure the Server default timezone is set
+
+Rune the following commands
+
+```
+timedatectl set-timezone Asia/Singapore
+date
+ls -l /etc/localtime
 ```
 
 ## Setting up user groups 
