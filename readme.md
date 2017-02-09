@@ -623,3 +623,4 @@ $ chown -R deployer /usr/local/rvm/
 ## Server Configurations Essentials
 * https://www.phusionpassenger.com/library/config/nginx/reference/#passenger_min_instances
 * https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx%203.0.html
+* http://sharadchhetri.com/2014/10/04/install-redis-server-centos-7-rhel-7/
