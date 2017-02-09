@@ -120,6 +120,12 @@ $ chmod 600 ~/.ssh/authorized_keys
 
 For more information, you can visit http://capistranorb.com/documentation/getting-started/authentication-and-authorisation/
 
+If you still cannot login to deployer, its probably because the setting is set to no password authentication
+
+```
+Solved it by amending the /etc/ssh/sshd_config 'PasswordAuthentication yes' then re-started the service 'sudo systemctl restart sshd
+```
+
 ## Updating and installing libraries on CentOS
 
 Finally, it’s time to start setting up the application! Login into the server and run the following commands
