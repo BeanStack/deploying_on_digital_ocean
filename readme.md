@@ -284,6 +284,13 @@ $ yum update
 $ yum install postgresql94-server postgresql94-contrib postgresql-libs postgresql-devel
 ```
 
+## In case you are installing a different version of PostgreSQL eg. 11
+make sure u do run the following command because centos is not clever enough to reference to the version by folder.
+```
+export PATH=$PATH:/usr/pgsql-9.5/bin
+yum install postgresql11 postgresql11-server postgresql11-contrib postgresql11-devel postgresql11-libs
+```
+
 Initialise the PostgreSQL database.
 ```
 $ /usr/pgsql-9.4/bin/postgresql94-setup initdb
