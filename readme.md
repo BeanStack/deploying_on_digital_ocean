@@ -158,7 +158,6 @@ Next, it is time to install Ruby and Rails! First we need RVM, our versioning ma
 First, add the GPG key for RVM to our local. Followed by getting RVM.
 
 ```
-$ gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
 $ curl -sSL https://rvm.io/pkuczynski.asc | gpg2 --import -
 $ curl -L get.rvm.io | bash -s stable
 $ source /etc/profile.d/rvm.sh
@@ -307,7 +306,9 @@ yum install postgresql-libs postgresql-devel
 ```
 
 ## In case you are installing a different version of PostgreSQL eg. 11
+
 make sure u do run the following command because centos is not clever enough to reference to the version by folder.
+
 ```
 export PATH=$PATH:/usr/pgsql-9.5/bin
 yum install postgresql11 postgresql11-server postgresql11-contrib postgresql11-devel postgresql11-libs
@@ -323,7 +324,7 @@ To enable PostgreSQL on every reboot, just run this command:
 
 ```
 $ systemctl enable postgresql-10.service
-$ sudo service start postgresql-10.service # start the service
+$ systemctl start postgresql-10.service # start the service
 ```
 
 To enable it for remote access:
@@ -400,7 +401,7 @@ host    all            all            ::1/128                md5
 Restart postgresql service to apply the changes:
 
 ```
-$ systemctl restart postgresql-9.4
+$ systemctl restart postgresql-10.service
 ```
 
 Your PostgreSQL server should be properly created now! To find out how to use phpPGAdmin for your server, visit this article: http://www.unixmen.com/postgresql-9-4-released-install-centos-7/
