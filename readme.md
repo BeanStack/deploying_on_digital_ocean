@@ -23,6 +23,13 @@ LANG=en_US.UTF-8
 LC_ALL=en_US.UTF-8
 ```
 
+Add proxy details into environment "/etc/environment" if you need internet access to download packages
+
+```
+export http_proxy=http://xxx.xxx.xxx.xxx:8888
+export https_proxy=http://xxx.xxx.xxx.xxx:8888
+```
+
 ## Make sure the Server default timezone is set
 
 Rune the following commands
@@ -33,7 +40,8 @@ date
 ls -l /etc/localtime
 ```
 
-## Setting up user groups 
+## Setting up user groups
+
 First, you need to setup the deployers group and a ‘deployer’ user
 
 Setting up the deployers group:
@@ -79,7 +87,6 @@ root    ALL=(ALL)  ALL
 ..
 ```
 
-
 ## Enabling SSH Authentication
 
 On your local machine, see if you have already an SSH key you can use by running:
@@ -89,9 +96,11 @@ $ ls ~/.ssh
 ```
 
 If you see any files with the .pub extension, then you have a key generated. Otherwise, run the following command:
+
 ```
 $ ssh-keygen -C "your.email@example.com"
 ```
+
 Remember to set up a passphrase, if not things can go wrong when pulling from Github.
 Your private key will be stored in a file called id_rsa, while id_rsa.pub will hold your public key.
 
@@ -107,6 +116,12 @@ Having our keys generated, we’re now ready to copy our public key over to the 
 
 ```
 $ ssh-copy-id -i ~/.ssh/id_rsa.pub deployer@xxx.xxx.xxx.xxx
+```
+
+If you copy via a port, use the below.
+
+```
+$ ssh-copy-id -p 6022 -i ~/.ssh/id_rsa.pub deployer@xxx.xxx.xxx.xxx
 ```
 
 This will create a new file called authorized_keys on your remote server inside the ~/.ssh directory and store your public key in it. If you now try to ssh into your server, you should be authenticated and logged in without entering your password.
@@ -144,11 +159,13 @@ First, add the GPG key for RVM to our local. Followed by getting RVM.
 
 ```
 $ gpg2 --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
+$ curl -sSL https://rvm.io/pkuczynski.asc | gpg2 --import -
 $ curl -L get.rvm.io | bash -s stable
 $ source /etc/profile.d/rvm.sh
 ```
 
 Next, we reload RVM and install ruby 2.2.2 (change this version if you want)
+
 ```
 $ rvm reload
 $ rvm install 2.2.2 OR $ rvm install 2.0.0
@@ -157,11 +174,11 @@ $ rvm install 2.2.2 OR $ rvm install 2.0.0
 Next install bundler and rails gem. You can change the version of rails as you like
 
 ```
-# install the latest rails version
-$ gem install bundler rails --no-ri --no-rdoc
+# install the latest rails version without documents
+$ gem install bundler rails --no-document
 
 # install a specific version of rails (e.g. 4.1.1)
-$ gem install bundler rails:4.1.1 --no-ri --no-rdoc
+$ gem install bundler rails:4.1.1 --no-document
 ```
 
 Note: If your VPS has less than 1 GB of RAM, you will need to perform the below simple procedure to prepare a SWAP disk space to be used as a temporary data holder (RAM substitute). Since DigitalOcean servers come with fast SSD disks, this does not really constitute an issue whilst performing the server application installation tasks.
@@ -273,30 +290,37 @@ $ /etc/init.d/nginx status
 
 Note: To learn more about Nginx, please refer to How to Configure Nginx Web Server on a VPS.
 
-
 ##Installing PostgreSQL
 
 Next, we will have to install PostgreSQL for our application servers. We will proceed to install PostgreSQL 9.4
 
 ```
-$ sudo rpm -Uvh http://yum.postgresql.org/9.4/redhat/rhel-7-x86_64/pgdg-centos94-9.4-1.noarch.rpm
+$ sudo rpm -Uvh https://yum.postgresql.org/10/redhat/rhel-7-x86_64/pgdg-centos10-10-2.noarch.rpm
 $ yum update
-$ yum install postgresql94-server postgresql94-contrib postgresql-libs postgresql-devel
+$ yum install postgresql10-server postgresql10 postgresql10-contrib postgresql10-devel postgresql10-libs
+```
+
+Sometimes, the stupid postgresql10-libs postgresql10-devel cannot work, so just yum install using the default package
+
+```
+yum install postgresql-libs postgresql-devel
 ```
 
 Initialise the PostgreSQL database.
+
 ```
-$ /usr/pgsql-9.4/bin/postgresql94-setup initdb
+$ /usr/pgsql-10/bin/postgresql-10-setup initdb
 ```
 
 To enable PostgreSQL on every reboot, just run this command:
 
 ```
-$ systemctl enable postgresql-9.4
-$ sudo service start postgresql-9.4 # start the service
+$ systemctl enable postgresql-10.service
+$ sudo service start postgresql-10.service # start the service
 ```
 
 To enable it for remote access:
+
 ```
 # start firewall daemon
 $ systemctl start firewalld
@@ -305,8 +329,8 @@ $ firewall-cmd --permanent --add-port=80/tcp
 $ firewall-cmd --reload
 ```
 
-
 Run the following command to make PostgreSQL work if SELinux enabled on your system.
+
 ```
 # setsebool -P httpd_can_network_connect_db 1
 ```
@@ -314,6 +338,7 @@ Run the following command to make PostgreSQL work if SELinux enabled on your sys
 You may not login to PostegreSQL if you didn’t run the above command.
 
 You have to note that when you install postgreSQL, the only user in postgreSQL given the rights to make changes is the user ‘postgres’. So we have to login with that name:
+
 ```
 $ su - postgres
 $ psql
@@ -337,7 +362,8 @@ $ psql
 postgres=# alter user deployer with password 'centos';
 postgres=# alter role deployer superuser createrole createdb replication;
 ```
-Now you have created a user called deployer with a password, for your application to login. This username and password will be used in your database.yml in your Rails config folder, to access the PostgreSQL database. 
+
+Now you have created a user called deployer with a password, for your application to login. This username and password will be used in your database.yml in your Rails config folder, to access the PostgreSQL database.
 
 ## Configure PostgreSQL-MD5 Authentication
 
@@ -394,6 +420,7 @@ end
 ```
 
 Run the commands to install the capistrano files into your application:
+
 ```
 $ cap install
 $ subl Capfile
@@ -406,44 +433,44 @@ Then, edit the `/config/deploy.rb`. Follow the code here in:
 ```
 set :application, 'app_name'
 set :repo_url, 'git@github.com:xxx/xxx.git'
- 
+
 # Default branch is :master
 ask :branch, `git rev-parse --abbrev-ref HEAD`.chomp
- 
+
 # Default deploy_to directory is /var/www/my_app_name
 set :deploy_to, '/home/deployer/apps/app_name'
 # Default value for :scm is :git
 # set :scm, :git
- 
+
 # Default value for :format is :pretty
 # set :format, :pretty
- 
+
 # Default value for :log_level is :debug
 # set :log_level, :debug
- 
+
 # Default value for :pty is false
 set :pty, true
- 
+
 # Default value for :linked_files is []
 set :linked_files, fetch(:linked_files, []).push('config/database.yml', 'config/application.yml')
 # set :linked_files, fetch(:linked_files, []).push('config/database.yml', 'config/secrets.yml')
- 
+
 # Default value for linked_dirs is []
 set :linked_dirs, fetch(:linked_dirs, []).push('log', 'tmp/pids', 'tmp/cache', 'tmp/sockets', 'vendor/bundle', 'public/system')
- 
+
 # Default value for default_env is {}
 # set :default_env, { path: "/opt/ruby/bin:$PATH" }
- 
+
 # Default value for keep_releases is 5
 set :keep_releases, 5
- 
+
 set :passenger_restart_command, 'rvmsudo passenger-config restart-app'
- 
+
 # Set rvm and ruby version if you use specific ones
 #set :rvm_ruby_version, '2.0.0@gemset_name'
- 
+
 # namespace :deploy do
- 
+
 #   after :restart, :clear_cache do
 #     on roles(:web), in: :groups, limit: 3, wait: 10 do
 #       # Here we can do anything such as:
@@ -452,8 +479,8 @@ set :passenger_restart_command, 'rvmsudo passenger-config restart-app'
 #       # end
 #     end
 #   end
- 
-# end 
+
+# end
 ```
 
 Edit `/config/deploy/production.rb` Add the block of code below, modifying it to suit your own settings:
@@ -463,35 +490,35 @@ Edit `/config/deploy/production.rb` Add the block of code below, modifying it to
 # ======================
 # Defines a single server with a list of roles and multiple properties.
 # You can define all roles on a single server, or split them:
- 
- 
+
+
 # production server is xxx.xxx.xxx.xxx
- 
+
 server 'xxx.xxx.xxx.xxx', user: 'deployer', roles: %w{app web}
 # server 'example.com', user: 'deployer', roles: %w{app db web}, my_property: :my_value
 # server 'example.com', user: 'deployer', roles: %w{app web}, other_property: :other_value
 # server 'db.example.com', user: 'deployer', roles: %w{db}
- 
- 
- 
+
+
+
 # role-based syntax
 # ==================
- 
+
 # Defines a role with one or multiple servers. The primary server in each
 # group is considered to be the first unless any  hosts have the primary
 # property set. Specify the username and a domain or IP for the server.
 # Don't use `:all`, it's a meta role.
- 
+
 # role :app, %w{deploy@example.com}, my_property: :my_value
 # role :web, %w{user1@primary.com user2@additional.com}, other_property: :other_value
 # role :db,  %w{deploy@example.com}
- 
+
 role :app, %w{deployer@xxx.xxx.xxx.xxx}
 role :web, %w{deployer@xxx.xxx.xxx.xxx}
 role :db,  %w{deployer@xxx.xxx.xxx.xxx}
- 
- 
- 
+
+
+
 # Configuration
 # =============
 # You can set any configuration variable like in config/deploy.rb
@@ -499,9 +526,9 @@ role :db,  %w{deployer@xxx.xxx.xxx.xxx}
 # For available Capistrano configuration variables see the documentation page.
 # http://capistranorb.com/documentation/getting-started/configuration/
 # Feel free to add new variables to customise your setup.
- 
- 
- 
+
+
+
 # Custom SSH Options
 # ==================
 # You may pass any option but keep in mind that net/ssh understands a
@@ -515,14 +542,14 @@ role :db,  %w{deployer@xxx.xxx.xxx.xxx}
 #    forward_agent: false,
 #    auth_methods: %w(password)
 #  }
- 
+
 set :ssh_options, {
     forward_agent: true,
     keys: %w(~/.ssh/id_rsa),
     auth_methods: %w(publickey),
     user: 'deployer'
 }
- 
+
 #
 # The server-based syntax can be used to override options:
 # ------------------------------------
@@ -550,6 +577,7 @@ First you need to create a folder in your server folder to store all your shared
 ```
 
 Enter the commands in your local machine to copy the database.yml, application.yml and secrets.yml for the application.
+
 ```
 # go into your app folder
 $ cd /projects/app_name
@@ -561,6 +589,7 @@ $ scp config/secrets.yml deployer@xxx.xxx.xxx.xxx:/home/deployer/apps/app_name/s
 You will then need to edit the database.yml, application.yml and secrets.yml on the server to make sure that they have the right keys and values for the production.
 
 For your database.yml, you need to make sure the following exists for your production:
+
 ```
 production:
   <<: *default
@@ -571,6 +600,7 @@ production:
 ```
 
 Then run the following in the current folder of your rails application in the server to create the database.
+
 ```
   RAILS_ENV=production rake db:create:all
 ```
@@ -580,7 +610,7 @@ For your secrets.yml, make sure to change the secret_key_base for your productio
 ```
 production:
   secret_key_base: ajsdklfjladskfjsdklafjksaldfjasfl;kdsajflkas;fadsf
-```  
+```
 
 Voila, its done! Now your linked files and database should be setup, it is time to deploy your application to the server
 
@@ -608,19 +638,20 @@ $ sudo chmod g+x,o+x /home/deployer/apps/gameday_api/current/
 ```
 
 If you encounter a circular error where you are unable to install gems during bundle install, it's probably that deployer has no rights to install to the RVM folder. Run the following command for the server:
+
 ```
 $ chown -R deployer /usr/local/rvm/
 ```
 
-
 ## References
 
-* https://gorails.com/deploy/ubuntu/14.04/
-* http://www.unixmen.com/postgresql-9-4-released-install-centos-7/
-* http://vladigleba.com/blog/2014/03/05/deploying-rails-apps-part-1-securing-the-server/
-* http://askubuntu.com/questions/192050/how-to-run-sudo-command-with-no-password
+- https://gorails.com/deploy/ubuntu/14.04/
+- http://www.unixmen.com/postgresql-9-4-released-install-centos-7/
+- http://vladigleba.com/blog/2014/03/05/deploying-rails-apps-part-1-securing-the-server/
+- http://askubuntu.com/questions/192050/how-to-run-sudo-command-with-no-password
 
 ## Server Configurations Essentials
-* https://www.phusionpassenger.com/library/config/nginx/reference/#passenger_min_instances
-* https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx%203.0.html
-* http://sharadchhetri.com/2014/10/04/install-redis-server-centos-7-rhel-7/
+
+- https://www.phusionpassenger.com/library/config/nginx/reference/#passenger_min_instances
+- https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx%203.0.html
+- http://sharadchhetri.com/2014/10/04/install-redis-server-centos-7-rhel-7/
